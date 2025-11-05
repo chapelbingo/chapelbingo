@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=Instrument+Serif:ital@0;1&family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <title>Chapel Bingo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Instrument Serif', 'Atkinson Hyperlegible Next', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        footer a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.85em;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: #333;
+        }
+
+        .bingo-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4px;
+            font-size: 0.75em;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.2s;
+            background: white;
+            overflow: hidden;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .bingo-cell:hover {
+            border-color: #999;
+        }
+
+        .bingo-cell .marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            pointer-events: none;
+            display: none;
+            object-fit: contain;
+        }
+
+        .bingo-cell.marked .marker {
+            display: block;
+        }
+
+        .bingo-cell span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .bingo-cell.free-space {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        .bingo-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .bingo-overlay.show {
+            display: flex;
+        }
+
+        .time-lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(245, 245, 245, 0);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(8px);
+        }
+
+        .time-lock-overlay.show {
+            display: flex;
+        }
+
+        .time-lock-message {
+            text-align: center;
+        }
+
+        .time-lock-message h2 {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .time-lock-message .countdown {
+            font-size: 2em;
+            font-weight: 600;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .bingo-message {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .bingo-message h2 {
+            font-size: 4em;
+            color: #059669;
+            margin-bottom: 20px;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        .bingo-message p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+
+            .bingo-board {
+              font-family: 'Inter Tight', 'Atkinson Hyperlegible Next';
+                gap: 4px;
+                padding: 8px;
+            }
+
+            .bingo-cell {
+                font-size: 0.55em;
+                padding: 2px;
+                line-height: 1.2;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+            }
+
+            .bingo-message h2 {
+                font-size: 3em;
+            }
+
+            .bingo-message {
+                padding: 30px 40px;
+            }
+
+            .time-lock-message h2 {
+                font-size: 2em;
+            }
+
+            .time-lock-message .countdown {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Chapel Bingo</h1>
+    <div class="bingo-board" id="bingoBoard"></div>
+
+    <footer>
+        <a href="https://reverentcatholicmass.com/map" target="_blank" rel="noopener noreferrer">ubi petrus ibi ecclesia</a>
+    </footer>
+
+    <div class="bingo-overlay" id="bingoOverlay">
+        <div class="bingo-message">
+            <h2>BINGO!</h2>
+            <p>Tap anywhere to continue</p>
+        </div>
+    </div>
+
+    <div class="time-lock-overlay" id="timeLockOverlay">
+        <div class="time-lock-message">
+            <h2>Available in</h2>
+            <div class="countdown" id="countdown">--:--:--</div>
+        </div>
+    </div>
+
+    <script>
+        const items = [
+            "adopted child",
+            "vaguely political message",
+            "token black",
+            "SL Advert",
+            "singing hymn mid-sermon",
+            "denies Perpetual Virginity",
+            "subtle brag about sins of past life",
+            "former alumni crashout",
+            "food on campus",
+            "flashbang slides",
+            "graphic tee",
+            "ripped jeans",
+            "hoodie",
+            "audience shout-out (1 person)",
+            "crazy fit",
+            "useless prop",
+            "sports team endorsement (audience participation)",
+						"clap farming",
+            "woman (1 Tim 2:12)",
+            "degen music reference",
+						"cooked hairline",
+            "\"let's give it up for the worship team!\" (verbatim)",
+            "kidposting",
+            "barely speaks english",
+            "obscure bible translation",
+            "explaining the gospel to a 5 yr old",
+            "I didn't sleep in college lol",
+            "casual flex (i know famous people)",
+            "bomber jacket",
+            "tech ceo fit",
+            "hood accent (isn't black)",
+            "shameless pandering to women",
+            "attempt to \"get real\"",
+            "lol ur degree is worthless",
+            "calling out phone users",
+            "awkward ravenscraft shoutout",
+            "90's pop culture reference no one gets",
+            "long, wordy prayer",
+            "dropping \"St.\" like y'all chill",
+            "unnecessary Hebrew / Greek",
+            "over-sharing about eating habits",
+            "sob-story (gwampy gone 🥀)",
+            "missionary / pastor's kid",
+            "\"my parents beat me if i didn't go to church\"",
+            "it's not a religion, it's a relationship!!!",
+            "mission's trip ad",
+            "las vegas church plant",
+            "i played sportsball",
+            "embarrasing story not involving them",
+            "homosexual undertones",
+            "early life tragedy",
+            "when i visited israel...",
+            "rapid-fire overused bible verses",
+            "white woman home decor verse",
+            "last name contains slur"
+        ];
+
+        const board = document.getElementById('bingoBoard');
+        const overlay = document.getElementById('bingoOverlay');
+        const timeLockOverlay = document.getElementById('timeLockOverlay');
+        const countdownEl = document.getElementById('countdown');
+        let completedBingos = new Set();
+        let cells = [];
+        let bypassCode = '';
+        let bypassActive = false;
+
+        // Konami code style bypass
+        document.addEventListener('keydown', (e) => {
+            bypassCode += e.key.toLowerCase();
+            if (bypassCode.length > 4) {
+                bypassCode = bypassCode.slice(-4);
+            }
+            if (bypassCode === 'homo') {
+                bypassActive = true;
+                timeLockOverlay.classList.remove('show');
+            }
+        });
+
+        function isChapelTime() {
+            const now = new Date();
+            const pstTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+            const day = pstTime.getDay();
+            const hours = pstTime.getHours();
+
+            // Tuesday is 2, check if between 9 AM (9) and noon (12)
+            return day === 2 && hours >= 9 && hours < 12;
+        }
+
+        function getNextChapelTime() {
+            const now = new Date();
+            const pstTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+
+            // Create next Tuesday 9 AM PST
+            const nextChapel = new Date(pstTime);
+            nextChapel.setHours(9, 0, 0, 0);
+
+            const currentDay = pstTime.getDay();
+            const daysUntilTuesday = (2 - currentDay + 7) % 7;
+
+            // If it's Tuesday but past noon, or any other day
+            if (currentDay === 2 && pstTime.getHours() >= 12) {
+                nextChapel.setDate(nextChapel.getDate() + 7);
+            } else if (daysUntilTuesday > 0) {
+                nextChapel.setDate(nextChapel.getDate() + daysUntilTuesday);
+            } else if (currentDay === 2 && pstTime.getHours() < 9) {
+                // It's Tuesday but before 9 AM, don't add days
+            } else {
+                nextChapel.setDate(nextChapel.getDate() + 7);
+            }
+
+            return nextChapel;
+        }
+
+        function updateCountdown() {
+            if (isChapelTime() || bypassActive) {
+                timeLockOverlay.classList.remove('show');
+                return;
+            }
+
+            timeLockOverlay.classList.add('show');
+
+            const now = new Date();
+            const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+            const nextChapel = getNextChapelTime();
+
+            const diff = nextChapel - pstNow;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+						const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            let countdownText = '';
+            if (days > 0) {
+                countdownText += `${days} day${days !== 1 ? 's' : ''} `;
+            }
+            countdownText += `${hours} hour${hours !== 1 ? 's' : ''} `;
+            countdownText += `${minutes} minute${minutes !== 1 ? 's' : ''} `;
+            countdownText += `${seconds} second${seconds !== 1 ? 's' : ''}`;
+
+            countdownEl.textContent = countdownText;
+        }
+
+        // Check time lock every second
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function initBoard() {
+            board.innerHTML = '';
+            cells = [];
+            completedBingos = new Set();
+
+            const shuffled = shuffleArray(items);
+            const selected = shuffled.slice(0, 24);
+
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+
+                const marker = document.createElement('img');
+                marker.className = 'marker';
+                marker.src = 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3plYWtzOGcxdGs1Mmw4NXdkc2N0OHU1N3NlMHM5YWh6aDdmMGdzYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/bF3unzRBK1FO6KXqEG/giphy.gif';
+                marker.alt = 'marked';
+
+                const text = document.createElement('span');
+
+                if (i === 12) {
+                    text.textContent = 'wifeposting (FREE SPACE)';
+                    cell.classList.add('free-space');
+                } else {
+                    const itemIndex = i < 12 ? i : i - 1;
+                    text.textContent = selected[itemIndex];
+                }
+
+                cell.appendChild(marker);
+                cell.appendChild(text);
+                cell.addEventListener('click', () => toggleCell(i));
+                board.appendChild(cell);
+                cells.push(cell);
+            }
+        }
+
+        function toggleCell(index) {
+            cells[index].classList.toggle('marked');
+            checkBingo();
+        }
+
+        function checkBingo() {
+            const marked = cells.map(cell => cell.classList.contains('marked'));
+            marked[12] = true; // Free space always counts
+
+            const newBingos = [];
+
+            // Check rows
+            for (let i = 0; i < 5; i++) {
+                const bingoId = `row-${i}`;
+                if (marked.slice(i * 5, i * 5 + 5).every(m => m) && !completedBingos.has(bingoId)) {
+                    newBingos.push(bingoId);
+                }
+            }
+
+            // Check columns
+            for (let i = 0; i < 5; i++) {
+                const bingoId = `col-${i}`;
+                if ([0, 1, 2, 3, 4].every(row => marked[row * 5 + i]) && !completedBingos.has(bingoId)) {
+                    newBingos.push(bingoId);
+                }
+            }
+
+            // Check diagonals
+            if ([0, 6, 12, 18, 24].every(i => marked[i]) && !completedBingos.has('diag-1')) {
+                newBingos.push('diag-1');
+            }
+            if ([4, 8, 12, 16, 20].every(i => marked[i]) && !completedBingos.has('diag-2')) {
+                newBingos.push('diag-2');
+            }
+
+            // Show alert for each new bingo
+            if (newBingos.length > 0) {
+                newBingos.forEach(id => completedBingos.add(id));
+                showBingo();
+            }
+        }
+
+        function showBingo() {
+            overlay.classList.add('show');
+        }
+
+        overlay.addEventListener('click', () => {
+            overlay.classList.remove('show');
+        });
+
+        initBoard();
+    </script>
+</body>
+</html>
